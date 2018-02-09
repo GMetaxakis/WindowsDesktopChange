@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Forms;
 using WindowsInput;
 using WindowsInput.Native;
+using Microsoft.Win32;
 
 namespace WindowsDesktopChange
 {
@@ -12,9 +13,11 @@ namespace WindowsDesktopChange
     /// </summary>
     public partial class MainWindow : Window
     {
+        string AppName = "WindowsDesktopChange";
         InputSimulator inputSimulator;
         NotifyIcon rightIcon = new NotifyIcon();
         NotifyIcon leftIcon = new NotifyIcon();
+        ContextMenu contextMenu;
 
         public MainWindow()
         {
@@ -30,14 +33,14 @@ namespace WindowsDesktopChange
                 leftIcon.Visible = true;
                 leftIcon.Click += leftIcon_Click;
 
-                ContextMenu contextMenu = new ContextMenu();
+                contextMenu = new ContextMenu();
                 contextMenu.MenuItems.Add("Go to left", leftIcon_Click);
                 contextMenu.MenuItems.Add("Go to right", rightIcon_Click);
+                contextMenu.MenuItems.Add("Run on startup", startup_Click);
                 contextMenu.MenuItems.Add("Exit", (s, e) => Close());
 
                 rightIcon.ContextMenu = contextMenu;
                 leftIcon.ContextMenu = contextMenu;
-
             }
             catch (Exception)
             {
@@ -66,5 +69,27 @@ namespace WindowsDesktopChange
             inputSimulator.Keyboard.KeyUp(VirtualKeyCode.LWIN);
             inputSimulator.Keyboard.KeyUp(VirtualKeyCode.LEFT);
         }
+
+        private void startup_Click(object sender, EventArgs e)
+        {
+            if (sender is MenuItem)
+            {
+                var item = sender as MenuItem;
+                item.Checked = !item.Checked;
+
+                try
+                {
+                    RegistryKey rk = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+
+                    if (item.Checked)
+                        rk.SetValue(AppName, System.Windows.Forms.Application.ExecutablePath);
+                    else
+                        rk.DeleteValue(AppName, false);
+                }
+                catch (Exception) { }
+            }
+
+        }
+
     }
 }
